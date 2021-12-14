@@ -1,0 +1,59 @@
+#Copyright (c) 2021 Huawei Device Co., Ltd.
+#Licensed under the Apache License, Version 2.0 (the "License");
+#you may not use this file except in compliance with the License.
+#You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#Unless required by applicable law or agreed to in writing, software
+#distributed under the License is distributed on an "AS IS" BASIS,
+#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#See the License for the specific language governing permissions and
+#limitations under the License.
+
+import("//build/ohos.gni")
+import("//build/ohos/ndk/ndk.gni")
+
+config("gptdisk_config") {
+  include_dirs = [
+    ".",
+    "//third_party/e2fsprogs/lib/",
+    "//third_party/popt/",
+  ]
+  cflags_cc = [
+    "-Wall",
+    "-D_FILE_OFFSET_BITS=64",
+    "-Wno-unused-parameter",
+    "-Wno-pragma-pack",
+    "-Wno-error=header-hygiene",
+    "-Wno-register",
+  ]
+}
+ohos_executable("sgdisk") {
+  install_enable = true
+  sources = [
+    "attributes.cc",
+    "basicmbr.cc",
+    "bsd.cc",
+    "crc32.cc",
+    "diskio-unix.cc",
+    "diskio.cc",
+    "gpt.cc",
+    "gptcl.cc",
+    "gptpart.cc",
+    "guid.cc",
+    "mbr.cc",
+    "mbrpart.cc",
+    # "ohos_popt.cc",
+    "parttypes.cc",
+    "sgdisk.cc",
+    "support.cc",
+  ]
+  public_configs = [ ":gptdisk_config" ]
+  deps = [ 
+    "//third_party/e2fsprogs/lib/uuid:libext2_uuid",
+    "//third_party/popt:popt_static",
+    ]
+  subsystem_name = "storage"
+  part_name = "storage_standard"
+}
