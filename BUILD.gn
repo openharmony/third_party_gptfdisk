@@ -47,7 +47,7 @@ ohos_executable("sgdisk") {
     "//third_party/e2fsprogs/lib/uuid:libext2_uuid",
     "//third_party/popt:popt_static",
     ]
-  subsystem_name = "storage_manager"
+  subsystem_name = "filemanagement"
   part_name = "storage_standard"
   install_images = ["system"]
 }
