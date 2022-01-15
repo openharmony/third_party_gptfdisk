@@ -27,66 +27,66 @@ using namespace std;
  * PART[n][type][guid]
  */
 static int ohos_dump(char* device) {
-  BasicMBRData mbrData;
-  GPTData gptData;
-  GPTPart partData;
-  int numParts = 0;
-  stringstream res;
-  
-  /* Silence noisy underlying library */
-  int stdout = dup(STDOUT_FILENO);
-  int silence = open("/dev/null", 0);
-  dup2(silence, STDOUT_FILENO);
-  dup2(silence, STDERR_FILENO);
+   BasicMBRData mbrData;
+   GPTData gptData;
+   GPTPart partData;
+   int numParts = 0;
+   stringstream res;
 
-  if (!mbrData.ReadMBRData((string)device)) {
-    cerr << "Failed to read MBR" << endl;
-    return 8;
-  }
+   /* Silence noisy underlying library */
+   int stdout = dup(STDOUT_FILENO);
+   int silence = open("/dev/null", 0);
+   dup2(silence, STDOUT_FILENO);
+   dup2(silence, STDERR_FILENO);
 
-  switch(mbrData.GetValidity()) {
-    case mbr:
-      res << "DISK mbr" << endl;
-      for (int i = 0; i < MAX_MBR_PARTS; i++) {
-        if(mbrData.GetLength(i) > 0) {
-          res << "PART" << (i + 1) << " " << hex << (int)mbrData.GetType(i) << dec << endl;
-        }
-      }
-      break;
-    case gpt:
-      gptData.JustLooking();
-      if(!gptData.LoadPartitions((string)device)) {
-        cerr << "Failed to read GPT" << endl;
-        return 9;
-      }
+   if (!mbrData.ReadMBRData((string)device)) {
+     cerr << "Failed to read MBR" << endl;
+     return 8;
+   }
 
-      res << "DISK gpt " << gptData.GetDiskGUID() << endl;
-      numParts = gptData.GetNumParts();
-      for (int i = 0; i < numParts; i++) {
-        partData = gptData[i];
-        if (partData.GetFirstLBA() > 0) {
-          res << "PART " << (i + 1) << " " << partData.GetType() << " " << partData.GetUniqueGUID() << " "
-              << partData.GetDescription() << endl;
-        }
-      }
-      break;
-    default:
-      cerr << "Unknown partition table" << endl;
-      return 10;
-  }
+   switch(mbrData.GetValidity()) {
+     case mbr:
+       res << "DISK mbr" << endl;
+       for (int i = 0; i < MAX_MBR_PARTS; i++) {
+         if(mbrData.GetLength(i) > 0) {
+           res << "PART" << (i + 1) << " " << hex << (int)mbrData.GetType(i) << dec << endl;
+         }
+       }
+       break;
+     case gpt:
+       gptData.JustLooking();
+       if(!gptData.LoadPartitions((string)device)) {
+         cerr << "Failed to read GPT" << endl;
+         return 9;
+       }
 
-  /* Write our actual output */
-  string resString = res.str();
-  write(stdout, resString.c_str(), resString.length());
-  return 0;
+       res << "DISK gpt " << gptData.GetDiskGUID() << endl;
+       numParts = gptData.GetNumParts();
+       for (int i = 0; i < numParts; i++) {
+         partData = gptData[i];
+         if (partData.GetFirstLBA() > 0) {
+           res << "PART " << (i + 1) << " " << partData.GetType() << " " << partData.GetUniqueGUID() << " "
+               << partData.GetDescription() << endl;
+         }
+       }
+       break;
+     default:
+       cerr << "Unknown partition table" << endl;
+       return 10;
+   }
+
+   /* Write our actual output */
+   string resString = res.str();
+   write(stdout, resString.c_str(), resString.length());
+   return 0;
 }
 
 int main(int argc, char *argv[]) {
-  for (int i = 0; i < argc; i++) {
-    if (!strcmp("--ohos-dump", argv[i])) {
-      return ohos_dump(argv[i + 1]);
-    }
-  }
+   for (int i = 0; i < argc; i++) {
+     if (!strcmp("--ohos-dump", argv[i])) {
+       return ohos_dump(argv[i + 1]);
+     }
+   }
    GPTDataCL theGPT;
    return theGPT.DoOptions(argc, argv);
 } // main
