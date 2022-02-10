@@ -49,7 +49,7 @@ static int ohos_dump(char* device) {
        res << "DISK mbr" << endl;
        for (int i = 0; i < MAX_MBR_PARTS; i++) {
          if(mbrData.GetLength(i) > 0) {
-           res << "PART" << (i + 1) << " " << hex << (int)mbrData.GetType(i) << dec << endl;
+           res << "PART " << (i + 1) << " " << hex << (int)mbrData.GetType(i) << dec << endl;
          }
        }
        break;
