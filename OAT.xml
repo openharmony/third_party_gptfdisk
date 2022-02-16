@@ -50,23 +50,18 @@
         <licensefile>COPYING</licensefile>
         <policylist>
             <policy name="projectPolicy" desc="">
-                <policyitem type="copyright" name="Roderick W. Smith" path=".*" rule="may" group="defaultGroup" filefilter="copyrightPolicyFilter" desc=""/>
-                <policyitem type="copyright" name="Guillaume Delacour " path=".*" rule="may" group="defaultGroup" filefilter="copyrightPolicyFilter" desc=""/>
-                <policyitem type="license" name="GPL-2.0+" path=".*" rule="may" group="defaultGroup" filefilter="GPL-2.0+" desc=""/>
-                <policyitem type="license" name="GPL-2.0-or-later" path=".*" rule="may" group="defaultGroup" filefilter="gptcurses.h" desc=""/>
-                <policyitem type="license" name="GPLStyleLicense" path=".*" rule="may" group="defaultGroup" filefilter="support.h" desc=""/>
-                <policyitem type="license" name="InvalidLicense" path=".*" rule="may" group="defaultGroup" filefilter="GPL-2.0+" desc=""/>
-                <policyitem type="copyright" name="NULL" path=".*" rule="may" group="defaultGroup" filefilter="copyrightPolicyFilter" desc=""/>
+                <policyitem type="compatibility" name="GPLStyleLicense" path="*.*" rule="may" group="defaultGroup" filefilter="defaultPolicyFilter" desc="独立进程，独立使用"/>
+                <policyitem type="compatibility" name="GPL-2.0+" path="*.*" rule="may" group="defaultGroup" filefilter="defaultPolicyFilter" desc="独立进程，独立使用"/>
+                <policyitem type="compatibility" name="GPL-2.0-or-later" path=".*" rule="may" group="defaultGroup" filefilter="defaultPolicyFilter" desc="独立进程，独立使用"/>
             </policy>
         </policylist>
         <filefilterlist>
             <filefilter name="defaultFilter" desc="Files not to check">
-                <filteritem type="filename" name="README.OpenSource|README.Windows|README|Makefile.*|uninstall*" desc="NoLicenseHeader"/>
             </filefilter>
             <filefilter name="defaultPolicyFilter" desc="Filters for compatibility，license header policies">
+                <filteritem type="filename" name="current.spec" desc="说明书,不扫描"/>
             </filefilter>
             <filefilter name="copyrightPolicyFilter" desc="Filters for copyright header policies">
-                <filteritem type="filename" name="diskio*.*|gptpart.*|guid.*" desc="InvalidCopyright"/> 
             </filefilter>
             <filefilter name="licenseFileNamePolicyFilter" desc="Filters for LICENSE file policies">
             </filefilter>
@@ -78,21 +73,21 @@
             </filefilter>
         </filefilterlist>
         <licensematcherlist>
-            <licensematcher name="GPL-2.0+" desc="License for file">
+            <licensematcher name="GPL-2.0+ License" desc="License for guid.* file">
                 <licensetext name="
-                /*
-                 * efone - Distributed internet phone system.
-                 *
-                 * (c) 1999,2000 Krzysztof Dabrowski
-                 * (c) 1999,2000 ElysiuM deeZine
-                 *
-                 * This program is free software; you can redistribute it and/or
-                 * modify it under the terms of the GNU General Public License
-                 * as published by the Free Software Foundation; either version
-                 * 2 of the License, or (at your option) any later version.
-                 *
-                 */
-                 " desc=""/>
+                //
+                // C++ Implementation: GUIDData
+                //
+                // Description: GUIDData class header
+                // Implements the GUIDData data structure and support methods
+                //
+                //
+                // Author: Rod Smith &lt;rodsmith@rodsbooks.com&gt;, (C) 2010-2011
+                //
+                // Copyright: See COPYING file that comes with this distribution
+                //
+                //
+                " desc=""/>
                 <licensetext name="
                 //
                 // C++ Interface: GUIDData
@@ -106,7 +101,7 @@
                 // Copyright: See COPYING file that comes with this distribution
                 //
                 //
-                 " desc=""/>
+                " desc=""/>
             </licensematcher>
         </licensematcherlist>
     </oatconfig>
