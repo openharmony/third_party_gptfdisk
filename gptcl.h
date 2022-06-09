@@ -1,7 +1,7 @@
 /*
     Implementation of GPTData class derivative with popt-based command
     line processing
-    Copyright (C) 2010-2013 Roderick W. Smith
+    Copyright (C) 2010-2022 Roderick W. Smith
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,8 +25,6 @@
 #include "gpt.h"
 #include <popt.h>
 
-using namespace std;
-
 class GPTDataCL : public GPTData {
    protected:
       // Following are variables associated with popt parameters....
@@ -34,20 +32,21 @@ class GPTDataCL : public GPTData {
       char *newPartInfo, *mbrParts, *twoParts, *outDevice, *typeCode;
       char *partGUID, *diskGUID;
       int alignment, deletePartNum, infoPartNum, largestPartNum, bsdPartNum;
+      bool alignEnd;
       uint32_t tableSize;
       poptContext poptCon;
 
       int BuildMBR(char* argument, int isHybrid);
    public:
       GPTDataCL(void);
-      GPTDataCL(string filename);
+      GPTDataCL(std::string filename);
       ~GPTDataCL(void);
-      void LoadBackupFile(string backupFile, int &saveData, int &neverSaveData);
+      void LoadBackupFile(std::string backupFile, int &saveData, int &neverSaveData);
       int DoOptions(int argc, char* argv[]);
 }; // class GPTDataCL
 
 int CountColons(char* argument);
-uint64_t GetInt(const string & argument, int itemNum);
-string GetString(string argument, int itemNum);
+uint64_t GetInt(const std::string & argument, int itemNum);
+std::string GetString(std::string argument, int itemNum);
 
 #endif

@@ -142,7 +142,7 @@ BasicMBRData & BasicMBRData::operator=(const BasicMBRData & orig) {
 // Read data from MBR. Returns 1 if read was successful (even if the
 // data isn't a valid MBR), 0 if the read failed.
 int BasicMBRData::ReadMBRData(const string & deviceFilename) {
-   int allOK = 1;
+   int allOK;
 
    if (myDisk == NULL) {
       myDisk = new DiskIO;
@@ -357,7 +357,7 @@ int BasicMBRData::ReadLogicalParts(uint64_t extendedStart, int partNum) {
 // MBR itself and any defined logical partitions, provided there's an
 // MBR extended partition.
 int BasicMBRData::WriteMBRData(void) {
-   int allOK = 1;
+   int allOK;
 
    if (myDisk != NULL) {
       if (myDisk->OpenForWrite() != 0) {
@@ -374,7 +374,7 @@ int BasicMBRData::WriteMBRData(void) {
 // Save the MBR data to a file. This writes both the
 // MBR itself and any defined logical partitions.
 int BasicMBRData::WriteMBRData(DiskIO *theDisk) {
-   int i, j, partNum, next, allOK = 1, moreLogicals = 0;
+   int i, j, partNum, next, allOK, moreLogicals = 0;
    uint64_t extFirstLBA = 0;
    uint64_t writeEbrTo; // 64-bit because we support extended in 2-4TiB range
    TempMBR tempMBR;
@@ -950,7 +950,7 @@ int BasicMBRData::SpaceBeforeAllLogicals(void) {
 // primary status. Also does NOT consider partition order; there
 // can be gaps and it will still be considered legal.
 int BasicMBRData::IsLegal(void) {
-   int allOK = 1;
+   int allOK;
 
    allOK = (FindOverlaps() == 0);
    allOK = (allOK && (NumPrimaries() <= 4));
@@ -1057,7 +1057,7 @@ void BasicMBRData::MakePart(int num, uint64_t start, uint64_t length, int type, 
 // Set the partition's type code.
 // Returns 1 if successful, 0 if not (invalid partition number)
 int BasicMBRData::SetPartType(int num, int type) {
-   int allOK = 1;
+   int allOK;
 
    if ((num >= 0) && (num < MAX_MBR_PARTS)) {
       if (partitions[num].GetLengthLBA() != UINT32_C(0)) {
@@ -1310,7 +1310,7 @@ void BasicMBRData::MakeItLegal(void) {
 // entries (primary space).
 // Returns the number of partitions moved.
 int BasicMBRData::RemoveLogicalsFromFirstFour(void) {
-   int i, j = 4, numMoved = 0, swapped = 0;
+   int i, j, numMoved = 0, swapped = 0;
    MBRPart temp;
 
    for (i = 0; i < 4; i++) {

@@ -3,9 +3,9 @@
         "Name"                  : "gptfdisk",
         "License"               : "GPL-2.0-or-later",
         "License File"          : "COPYING",
-        "Version Number"        : "1.0.5",
+        "Version Number"        : "1.0.9",
         "Owner"                 : "Roderick W. Smith, rodsmith@rodsbooks.com",
-        "Upstream URL"          : "https://sourceforge.net/projects/gptfdisk/files/gptfdisk/1.0.5/gptfdisk-1.0.5.tar.gz/download",
+        "Upstream URL"          : "https://sourceforge.net/projects/gptfdisk/files/gptfdisk/1.0.9/gptfdisk-1.0.9.tar.gz/download",
         "Description"           : "GPT fdisk is a disk partitioning tool loosely modeled on Linux fdisk, but used for modifying GUID Partition Table (GPT) disks. The related FixParts utility fixes some common problems on Master Boot Re"
     }
 ]

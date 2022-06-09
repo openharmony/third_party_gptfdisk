@@ -1,7 +1,7 @@
 /*
  *    Implementation of GPTData class derivative with curses-based text-mode
  *    interaction
- *    Copyright (C) 2011-2018 Roderick W. Smith
+ *    Copyright (C) 2011-2022 Roderick W. Smith
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#ifdef __APPLE__
+#if defined (__APPLE__) || (__FreeBSD__)
 #include <ncurses.h>
 #else
 #include <ncursesw/ncurses.h>
@@ -90,7 +90,7 @@ void GPTDataCurses::EmptySpaces(void) {
 // unpartitioned space on the disk.
 // Returns the number of Spaces created.
 int GPTDataCurses::MakeSpacesFromParts(void) {
-   uint i;
+   uint32_t i;
    Space *tempSpace;
 
    EmptySpaces();
@@ -239,22 +239,22 @@ Space* GPTDataCurses::ShowSpace(int spaceNum, int lineNum) {
       ClearLine(lineNum);
       if (space->partNum == -1) { // space is empty
          move(lineNum, 12);
-         printw(BytesToIeee((space->lastLBA - space->firstLBA + 1), blockSize).c_str());
+         printw("%s", BytesToIeee((space->lastLBA - space->firstLBA + 1), blockSize).c_str());
          move(lineNum, 24);
          printw("free space");
       } else { // space holds a partition
          move(lineNum, 3);
          printw("%d", space->partNum + 1);
          move(lineNum, 12);
-         printw(BytesToIeee((space->lastLBA - space->firstLBA + 1), blockSize).c_str());
+         printw("%s", BytesToIeee((space->lastLBA - space->firstLBA + 1), blockSize).c_str());
          move(lineNum, 24);
-         printw(space->origPart->GetTypeName().c_str());
+         printw("%s", space->origPart->GetTypeName().c_str());
          move(lineNum, 50);
          #ifdef USE_UTF16
          space->origPart->GetDescription().extract(0, 39, temp, 39);
          printw(temp);
          #else
-         printw(space->origPart->GetDescription().c_str());
+         printw("%s", space->origPart->GetDescription().c_str());
          #endif
       } // if/else
    } // if
@@ -271,10 +271,10 @@ int GPTDataCurses::DisplayParts(int selected) {
 
    move(lineNum++, 0);
    theLine = "Part. #     Size        Partition Type            Partition Name";
-   printw(theLine.c_str());
+   printw("%s", theLine.c_str());
    move(lineNum++, 0);
    theLine = "----------------------------------------------------------------";
-   printw(theLine.c_str());
+   printw("%s", theLine.c_str());
    numToShow = LINES - RESERVED_TOP - RESERVED_BOTTOM;
    pageNum = selected / numToShow;
    for (i = pageNum * numToShow; i <= (pageNum + 1) * numToShow - 1; i++) {
@@ -339,7 +339,7 @@ void GPTDataCurses::ShowInfo(int partNum) {
           BytesToIeee(partitions[partNum].GetLastLBA(), blockSize).c_str());
    size = partitions[partNum].GetLastLBA() - partitions[partNum].GetFirstLBA() + 1;
    printw("Partition size: %lld sectors (%s)\n", size, BytesToIeee(size, blockSize).c_str());
-   printw("Attribute flags: %016x\n", partitions[partNum].GetAttributes().GetAttributes());
+   printw("Attribute flags: %016llx\n", partitions[partNum].GetAttributes().GetAttributes());
    #ifdef USE_UTF16
    partitions[partNum].GetDescription().extract(0, NAME_SIZE , temp, NAME_SIZE );
    printw("Partition name: '%s'\n", temp);
@@ -430,14 +430,19 @@ void GPTDataCurses::Verify(void) {
 
 // Create a new partition in the space pointed to by currentSpace.
 void GPTDataCurses::MakeNewPart(void) {
-   uint64_t size, newFirstLBA = 0, newLastLBA = 0;
+   uint64_t size, newFirstLBA = 0, newLastLBA = 0, lastAligned;
    int partNum;
    char inLine[80];
 
    move(LINES - 4, 0);
    clrtobot();
+   lastAligned = currentSpace->lastLBA + 1;
+   Align(&lastAligned);
+   lastAligned--;
+   // Discard end-alignment attempt if it's giving us an invalid end point....
+   if (!IsFree(lastAligned))
+       lastAligned = currentSpace->lastLBA;
    while ((newFirstLBA < currentSpace->firstLBA) || (newFirstLBA > currentSpace->lastLBA)) {
-      newFirstLBA = currentSpace->firstLBA;
       move(LINES - 4, 0);
       clrtoeol();
       newFirstLBA = currentSpace->firstLBA;
@@ -446,10 +451,13 @@ void GPTDataCurses::MakeNewPart(void) {
       echo();
       getnstr(inLine, 79);
       noecho();
-      newFirstLBA = IeeeToInt(inLine, blockSize, currentSpace->firstLBA, currentSpace->lastLBA, newFirstLBA);
+      newFirstLBA = IeeeToInt(inLine, blockSize, currentSpace->firstLBA, currentSpace->lastLBA, sectorAlignment, newFirstLBA);
       Align(&newFirstLBA);
    } // while
-   size = currentSpace->lastLBA - newFirstLBA + 1;
+   if (newFirstLBA > lastAligned)
+      size = currentSpace->lastLBA - newFirstLBA + 1;
+   else
+      size = lastAligned - newFirstLBA + 1;
    while ((newLastLBA > currentSpace->lastLBA) || (newLastLBA < newFirstLBA)) {
       move(LINES - 3, 0);
       clrtoeol();
@@ -457,7 +465,7 @@ void GPTDataCurses::MakeNewPart(void) {
       echo();
       getnstr(inLine, 79);
       noecho();
-      newLastLBA = newFirstLBA + IeeeToInt(inLine, blockSize, 1, size, size) - 1;
+      newLastLBA = newFirstLBA + IeeeToInt(inLine, blockSize, 1, size, sectorAlignment, size) - 1;
    } // while
    partNum = FindFirstFreePart();
    if (CreatePartition(partNum, newFirstLBA, newLastLBA)) { // created OK; set type code & name....
@@ -600,7 +608,7 @@ void GPTDataCurses::MoveSelection(int delta) {
 // Show user's options. Refers to currentSpace to determine which options to show.
 // Highlights the option with the key selectedKey; or a default if that's invalid.
 void GPTDataCurses::DisplayOptions(char selectedKey) {
-   uint i, j = 0, firstLine, numPerLine;
+   uint64_t i, j = 0, firstLine, numPerLine;
    string optionName, optionDesc = "";
 
    if (currentSpace != NULL) {
@@ -637,7 +645,7 @@ void GPTDataCurses::DisplayOptions(char selectedKey) {
          } // if/else
       } // for
       move(LINES - 1, (COLS - optionDesc.length()) / 2);
-      printw(optionDesc.c_str());
+      printw("%s", optionDesc.c_str());
       currentKey = selectedKey;
    } // if
 } // GPTDataCurses::DisplayOptions()
@@ -749,11 +757,11 @@ void GPTDataCurses::DrawMenu(void) {
 
    clear();
    move(0, (COLS - title.length()) / 2);
-   printw(title.c_str());
+   printw("%s", title.c_str());
    move(2, (COLS - drive.length()) / 2);
-   printw(drive.c_str());
+   printw("%s", drive.c_str());
    move(3, (COLS - size.str().length()) / 2);
-   printw(size.str().c_str());
+   printw("%s", size.str().c_str());
    DisplayParts(currentSpaceNum);
 } // DrawMenu
 
@@ -803,7 +811,7 @@ void PromptToContinue(void) {
 void Report(string theText) {
    clear();
    move(0, 0);
-   printw(theText.c_str());
+   printw("%s", theText.c_str());
    move(LINES - 2, (COLS - 29) / 2);
    printw("Press any key to continue....");
    cbreak();
