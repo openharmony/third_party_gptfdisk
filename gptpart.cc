@@ -17,17 +17,16 @@
 #define __STDC_CONSTANT_MACROS
 #endif
 
-#ifdef USE_UTF16
-#include <unicode/ustdio.h>
-#else
-#define UnicodeString string
-#endif
-
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
 #include "gptpart.h"
 #include "attributes.h"
+#ifdef USE_UTF16
+#include <unicode/ustdio.h>
+#else
+#define UnicodeString std::string
+#endif
 
 using namespace std;
 
@@ -244,7 +243,6 @@ void GPTPart::SetName(const string & theName) {
       // then to utf16le
       if ( uni < 0x10000 ) {
          name[ pos ] = (uint16_t) uni ;
-         if ( ! IsLittleEndian() ) ReverseBytes( name + pos , 2 ) ;
          pos ++ ;
       } // if
       else {
@@ -254,10 +252,8 @@ void GPTPart::SetName(const string & theName) {
          } // if
          uni -= 0x10000 ;
          name[ pos ] = (uint16_t)( uni >> 10 ) | 0xd800 ;
-         if ( ! IsLittleEndian() ) ReverseBytes( name + pos , 2 ) ;
          pos ++ ;
          name[ pos ] = (uint16_t)( uni & 0x3ff ) | 0xdc00 ;
-         if ( ! IsLittleEndian() ) ReverseBytes( name + pos , 2 ) ;
          pos ++ ;
       }
    } // for
@@ -417,14 +413,18 @@ int GPTPart::DoTheyOverlap(const GPTPart & other) {
 // Reverse the bytes of integral data types and of the UTF-16LE name;
 // used on big-endian systems.
 void GPTPart::ReversePartBytes(void) {
-   int i;
-
    ReverseBytes(&firstLBA, 8);
    ReverseBytes(&lastLBA, 8);
    ReverseBytes(&attributes, 8);
+   ReverseNameBytes();
+} // GPTPart::ReversePartBytes()
+
+void GPTPart::ReverseNameBytes(void) {
+   int i;
+
    for (i = 0; i < NAME_SIZE; i ++ )
       ReverseBytes(name + i, 2);
-} // GPTPart::ReverseBytes()
+} // GPTPart::ReverseNameBytes()
 
 /****************************************
  * Functions requiring user interaction *

@@ -39,6 +39,10 @@
 
 using namespace std;
 
+#ifdef __APPLE__
+#define off64_t off_t
+#endif
+
 // Returns the official "real" name for a shortened version of same.
 // Trivial here; more important in Windows
 void DiskIO::MakeRealName(void) {
@@ -374,7 +378,7 @@ int DiskIO::Read(void* buffer, int numBytes) {
 // size with the number of bytes read.
 // Returns the number of bytes written.
 int DiskIO::Write(void* buffer, int numBytes) {
-   int blockSize = 512, i, numBlocks, retval = 0;
+   int blockSize, i, numBlocks, retval = 0;
    char* tempSpace;
 
    // If disk isn't open, try to open it....

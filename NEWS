@@ -1,8 +1,104 @@
-1.0.6 (?/??/2020):
+1.0.9 (4/14/2022):
+------------------
+
+- Removed stray debugging code that caused "partNum is {x}" to be printed
+  when changing a partition's name with sgdisk (-c/--change-name).
+
+- Added support for aligning partitions' end points, as well as their start
+  points. This support affects the default partition size when using 'n' in
+  gdisk; it affects the default partition size in cgdisk; and it's activated
+  by the new '-I' option in sgdisk. See the programs' respective man pages
+  for details. This feature is intended to help with LUKS2 encryption, which
+  reacts badly to partitions that are not sized as exact multiples of the
+  encryption block size.
+
+- Added check for too-small disks (most likely to be an issue when trying
+  to use a too-small disk image); program now aborts if this happens.
+
+- Added the ability to build sgdisk and cgdisk for Windows.
+
+- Added new type codes:
+  * FreeBSD nandfs (0xa506)
+  * Apple APFS Pre-Boot (0xaf0b)
+  * Apple APFS Recovery (0xaf0c)
+  * ChromeOS firmware (0x7f03)
+  * ChromeOS mini-OS (0x7f04)
+  * ChromeOS hibernate (0x7f05)
+  * U-Boot boot loader (0xb000)
+  * 27 (!) codes for Fuchsia (0xf100 to 0xf11a)
+
+- Fixed build problems with recent versions of ncurses.
+
+- Fixed bug that caused cgdisk to report incorrect partition attributes.
+
+- Consolidated Makefiles for Linux, FreeBSD, Solaris, macOS, and Windows
+  (32- and 64-bit). The old OS-specific Makefiles remain in case the new
+  consolidated Makefile has problems, but the old ones are deprecated.
+  (The Solaris support in the new Makefile is untested.)
+
+1.0.8 (6/9/2021):
+-----------------
+
+- Fixed double byte swap operation on writes of partition name data on
+  big-endian systems; this is in addition to the double byte swap fix on
+  reading partition label data fixed in 1.0.7. (Thanks to Erik Larsson for
+  both fixes.)
+
+- Added feature to gdisk and sgdisk to enable swapping the byte order of
+  partition names, so as to correct disks already affected by the preceding
+  bug. This option is 'b' on the experts' menu in gdisk and
+  -b/--byte-swap-name in sgdisk. This seems advanced/obscure enough that I
+  don't want to clutter cgdisk's menu with this option, so I haven't added
+  it there.
+
+- Added type code for the Barebox boot loader (0xbb00;
+  4778ED65-BF42-45FA-9C5B-287A1DC4AAB1).
+
+- Trivial code cleanup.
+
+1.0.7 (3/10/2021):
+------------------
+
+- Fixed bug that caused spurious warnings about the partition table
+  header claiming an invalid size of partition entries when reading
+  some MBR disks.
+
+- Added ARM64 as an architecture for the Mac builds of gdisk and fixparts.
+  The official GPT fdisk binaries of these files for macOS are now
+  "universal" x86-64/ARM64 binaries, so they will run natively on the new M1
+  (ARM64) Macs. The sgdisk and cgdisk binaries, though, remain built only
+  for x86-64, because they rely on libraries that are not easily built in
+  "universal" form.
+
+- Fixed double byte swap operation on partition label data on big-endian
+  CPUs. This resulted in partition names becoming gibberish on such CPUs.
+
+- Added three new type codes:
+  - 0x0701 - Microsoft Storage Replica
+  - 0x0702 - ArcaOS Type 1
+  - 0x8401 - Storage Performance Development Kit (SPDK) block device
+
+1.0.6 (1/13/2021):
 ------------------
 
 - Fixed bug that could cause segfault if GPT header claimed partition
-  entries are oversized.
+  entries are oversized. See:
+  https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-0256
+
+- Fixed bug that could cause a crash if a badly-formatted MBR disk was
+  read. See:
+  https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-0308
+
+- Renamed the partition type "Freedesktop $BOOT" to "XBOOTLDR partition".
+
+- Added several more Freedesktop partition table type codes (0x8312 through
+  0x831C).
+
+- Fixed type code definition in diskio-unix.cc that prevented 32-bit builds
+  from correctly handling disks over 4 TiB in size.
+
+- Minor tweaks to get the software to compile on FreeBSD; that seems to have
+  fallen into disrepair.
 
 1.0.5 (2/17/2020):
 ------------------
