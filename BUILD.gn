@@ -21,6 +21,7 @@ config("gptdisk_config") {
     "-Wno-pragma-pack",
     "-Wno-error=header-hygiene",
     "-Wno-register",
+    "-Wno-unused-but-set-variable",
   ]
 }
 ohos_executable("sgdisk") {
