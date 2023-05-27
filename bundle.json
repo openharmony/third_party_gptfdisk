@@ -14,8 +14,8 @@
         "en": "README"
     },
     "component": {
-        "name": "thirdparty_gptfdisk",
-        "subsystem": "",
+        "name": "gptfdisk",
+        "subsystem": "thirdparty",
         "syscap": [],
         "features": [],
         "adapted_system_type": [],
