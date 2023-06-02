@@ -7,6 +7,7 @@
 
 import("//build/ohos.gni")
 import("//build/ohos/ndk/ndk.gni")
+import("//third_party/e2fsprogs/e2fsprogs.gni")
 
 config("gptdisk_config") {
   include_dirs = [
