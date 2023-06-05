@@ -7,7 +7,6 @@
 
 import("//build/ohos.gni")
 import("//build/ohos/ndk/ndk.gni")
-import("//third_party/e2fsprogs/e2fsprogs.gni")
 
 config("gptdisk_config") {
   include_dirs = [
@@ -46,7 +45,7 @@ ohos_executable("sgdisk") {
   ]
   public_configs = [ ":gptdisk_config" ]
   deps = [
-    "//third_party/e2fsprogs/e2fsprogs/lib/uuid:libext2_uuid",
+    "//third_party/e2fsprogs:libext2_uuid",
     "//third_party/popt:popt_static",
   ]
   subsystem_name = "filemanagement"
