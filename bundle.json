@@ -31,8 +31,12 @@
             ]
         },
         "build": {
-            "sub_component": ["//third_party/gptfdisk:sgdisk"],
-            "inner_kits": [],
+            "sub_component": [],
+            "inner_kits": [
+                {
+                    "name": "//third_party/gptfdisk:sgdisk"
+                }
+            ],
             "test": []
         }
     }
