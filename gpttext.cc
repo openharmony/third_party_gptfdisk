@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2022  <Roderick W. Smith>
+    Copyright (C) 2010-2024  <Roderick W. Smith>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -186,6 +186,8 @@ void GPTDataTextUI::MoveMainTable(void) {
     uint64_t maxValue = FindFirstUsedLBA() - pteSize;
     ostringstream prompt;
 
+    if (maxValue == UINT64_MAX - pteSize)
+        maxValue = FindLastAvailable() - pteSize;
     cout << "Currently, main partition table begins at sector " << mainHeader.partitionEntriesLBA
          << " and ends at sector " << mainHeader.partitionEntriesLBA + pteSize - 1 << "\n";
     prompt << "Enter new starting location (2 to " << maxValue << "; default is 2; 1 to abort): ";
@@ -196,6 +198,26 @@ void GPTDataTextUI::MoveMainTable(void) {
         cout << "Aborting change!\n";
     } // if
 } // GPTDataTextUI::MoveMainTable()
+
+// Move the backup partition table.
+void GPTDataTextUI::MoveSecondTable(void) {
+    uint64_t newStart, pteSize = GetTableSizeInSectors();
+    uint64_t minValue = FindLastUsedLBA() + 1;
+    uint64_t maxValue = diskSize - 1 - pteSize;
+    ostringstream prompt;
+
+    cout << "Currently, backup partition table begins at sector " << secondHeader.partitionEntriesLBA
+         << " and ends at\n"
+         << "sector " << secondHeader.partitionEntriesLBA + pteSize - 1 << "\n";
+    prompt << "Enter new starting location (" << minValue << " to " << maxValue <<
+           "; default is " << maxValue << "; 1 to abort): ";
+    newStart = GetNumber(minValue, maxValue, maxValue, prompt.str());
+    if (newStart != secondHeader.partitionEntriesLBA) {
+        GPTData::MoveSecondTable(newStart);
+    } else {
+        cout << "Aborting change!\n";
+    } // if
+} // GPTDataTextUI::MoveSecondTable()
 
 // Interactively create a partition
 void GPTDataTextUI::CreatePartition(void) {
@@ -873,6 +895,9 @@ void GPTDataTextUI::ExpertsMenu(string filename) {
          case 'j': case 'J':
              MoveMainTable();
              break;
+         case 'k': case 'K':
+             MoveSecondTable();
+             break;
          case 'l': case 'L':
             prompt.seekp(0);
             prompt << "Enter the sector alignment value (1-" << MAX_ALIGNMENT << ", default = "
@@ -946,6 +971,7 @@ void GPTDataTextUI::ShowExpertCommands(void) {
    cout << "h\trecompute CHS values in protective/hybrid MBR\n";
    cout << "i\tshow detailed information on a partition\n";
    cout << "j\tmove the main partition table\n";
+   cout << "k\tmove the backup partition table\n";
    cout << "l\tset the sector alignment value\n";
    cout << "m\treturn to main menu\n";
    cout << "n\tcreate a new protective MBR\n";

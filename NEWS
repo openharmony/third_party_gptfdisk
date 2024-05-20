@@ -1,3 +1,44 @@
+1.0.10 (2/19/2024):
+-------------------
+
+- Fixed problem that caused sgdisk to crash with errors about being unable
+  to read the disk's partition table when compiled with the latest popt
+  (commit 740, which is pre-release as I type; presumably version 1.19 and
+  later once released).
+
+- Updated guid.cc to deal with minor change in libuuid.
+
+- Fixed potential NULL derefernce bug in sgdisk. Thanks to Damian Kurek
+  for this fix.
+
+- The partition number of "0" can now be used to reference newly-created
+  partitions when the --largest-new=0 option to sgdisk is used. Thanks to
+  David Joaquín Shourabi Porcel for this improvement.
+
+- Make explicit casts in gptcurses.cc to eliminate compiler warnings about
+  mis-matched types in printw() statements.
+
+- Minor code cleanup based on valgrind analysis.
+
+- In previous versions, GPT fdisk accepted only integer values for partition
+  start points, end points, and sizes, and it interpreted decimal values
+  incorrectly. That is, if you typed "+9.5G" as the partition end point,
+  you'd end up with something just 9 sectors in size. This version now
+  truncates decimal numbers to their integral values, so you'd get a 9 GiB
+  partition instead.
+
+- Changes to optimize disk handling, particularly on Windows, courtesy of
+  Frediano Ziglio.
+
+- Added numerous new partition type codes from Discoverable Partitions
+  Specification
+  (https://uapi-group.org/specifications/specs/discoverable_partitions_specification/).
+
+- Added new sgdisk -k/--move-backup-table and gdisk k (on the experts' menu)
+  option to relocate the backup partition table. This is the counterpart of
+  the sgdisk -j/--move-main-table and gdisk j (on the experts' menu) option
+  to move the main partition table. This code comes from Niklas Gollenstede.
+
 1.0.9 (4/14/2022):
 ------------------
 

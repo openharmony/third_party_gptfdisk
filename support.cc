@@ -3,7 +3,7 @@
 // Primarily by Rod Smith, February 2009, but with a few functions
 // copied from other sources (see attributions below).
 
-/* This program is copyright (c) 2009-2022 by Roderick W. Smith. It is distributed
+/* This program is copyright (c) 2009-2024 by Roderick W. Smith. It is distributed
   under the terms of the GNU GPL version 2, as detailed in the COPYING file. */
 
 #define __STDC_LIMIT_MACROS
@@ -128,6 +128,8 @@ char GetYN(void) {
 // inValue works out to something outside the range low-high, returns the
 // computed value; the calling function is responsible for checking the
 // validity of this value.
+// If inValue contains a decimal number (e.g., "9.5G"), quietly truncate it
+// (to "9G" in this example).
 // NOTE: There's a difference in how GCC and VC++ treat oversized values
 // (say, "999999999999999999999") read via the ">>" operator; GCC turns
 // them into the maximum value for the type, whereas VC++ turns them into
@@ -162,7 +164,15 @@ uint64_t IeeeToInt(string inValue, uint64_t sSize, uint64_t low, uint64_t high, 
       badInput = 1;
    inString >> response >> suffix;
    suffix = toupper(suffix);
-
+   foundAt = suffixes.find(suffix);
+   // If suffix is invalid, try to find a valid one. Done because users
+   // sometimes enter decimal numbers; when they do, suffix becomes
+   // '.', and we need to truncate the number and find the real suffix.
+   while (foundAt > (suffixes.length() - 1) && inString.peek() != -1) {
+      inString >> suffix;
+      foundAt = suffixes.find(suffix);
+      suffix = toupper(suffix);
+   }
    // If no response, or if response == 0, use default (def)
    if ((inValue.length() == 0) || (response == 0)) {
       response = def;
@@ -171,7 +181,6 @@ uint64_t IeeeToInt(string inValue, uint64_t sSize, uint64_t low, uint64_t high, 
    } // if
 
    // Find multiplication and division factors for the suffix
-   foundAt = suffixes.find(suffix);
    if (foundAt != string::npos) {
       bytesPerUnit = UINT64_C(1) << (10 * (foundAt + 1));
       mult = bytesPerUnit / sSize;
