@@ -142,6 +142,7 @@ public:
    // Adjust GPT structures WITHOUT user interaction...
    int SetGPTSize(uint32_t numEntries, int fillGPTSectors = 1);
    int MoveMainTable(uint64_t pteSector);
+   int MoveSecondTable(uint64_t pteSector);
    void BlankPartitions(void);
    int DeletePartition(uint32_t partNum);
    uint32_t CreatePartition(uint32_t partNum, uint64_t startSector, uint64_t endSector);
@@ -181,6 +182,7 @@ public:
    // Find information about free space
    uint64_t FindFirstAvailable(uint64_t start = 0);
    uint64_t FindFirstUsedLBA(void);
+   uint64_t FindLastUsedLBA(void);
    uint64_t FindFirstInLargest(void);
    uint64_t FindLastAvailable();
    uint64_t FindLastInFree(uint64_t start, bool align = false);

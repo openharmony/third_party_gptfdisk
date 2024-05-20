@@ -3,7 +3,7 @@
 
 /* By Rod Smith, initial coding January to February, 2009 */
 
-/* This program is copyright (c) 2009-2022 by Roderick W. Smith. It is distributed
+/* This program is copyright (c) 2009-2024 by Roderick W. Smith. It is distributed
   under the terms of the GNU GPL version 2, as detailed in the COPYING file. */
 
 #define __STDC_LIMIT_MACROS
@@ -82,6 +82,7 @@ GPTData::GPTData(void) {
    beQuiet = 0;
    whichWasUsed = use_new;
    mainHeader.numParts = 0;
+   mainHeader.firstUsableLBA = 0;
    mainHeader.lastUsableLBA = 0;
    numParts = 0;
    SetGPTSize(NUM_GPT_ENTRIES);
@@ -345,6 +346,13 @@ int GPTData::Verify(void) {
             << "). This is helpful in some exotic configurations,\n"
             << "but is generally ill-advised. Using 'j' on the experts' menu can adjust this\n"
             << "gap.\n";
+   } // if
+   if (secondHeader.partitionEntriesLBA != diskSize - GetTableSizeInSectors() - 1) {
+       cout << "\nWarning: There is a gap between the secondary partition table (ending at sector\n"
+            << secondHeader.partitionEntriesLBA + GetTableSizeInSectors() - 1
+            << ") and the secondary metadata (sector " << mainHeader.backupLBA << ").\n"
+            << "This is helpful in some exotic configurations, but is generally ill-advised.\n"
+            << "Using 'k' on the experts' menu can adjust this gap.\n";
    } // if
    if (mainHeader.partitionEntriesLBA + GetTableSizeInSectors() != mainHeader.firstUsableLBA) {
        cout << "\nWarning: There is a gap between the main partition table (ending sector "
@@ -835,25 +843,27 @@ int GPTData::LoadPartitions(const string & deviceFilename) {
    int err, allOK = 1;
    MBRValidity mbrState;
 
-   if (myDisk.OpenForRead(deviceFilename)) {
-      err = myDisk.OpenForWrite(deviceFilename);
-      if ((err == 0) && (!justLooking)) {
-         cout << "\aNOTE: Write test failed with error number " << errno
-              << ". It will be impossible to save\nchanges to this disk's partition table!\n";
+    if (!justLooking) {
+        if (myDisk.OpenForRead(deviceFilename)) {
+            err = myDisk.OpenForWrite(deviceFilename);
+            if (err == 0) {
+                cout << "\aNOTE: Write test failed with error number " << errno
+                     << ". It will be impossible to save\nchanges to this disk's partition table!\n";
 #if defined (__FreeBSD__) || defined (__FreeBSD_kernel__)
-         cout << "You may be able to enable writes by exiting this program, typing\n"
-              << "'sysctl kern.geom.debugflags=16' at a shell prompt, and re-running this\n"
-              << "program.\n";
+                cout << "You may be able to enable writes by exiting this program, typing\n"
+                 << "'sysctl kern.geom.debugflags=16' at a shell prompt, and re-running this\n"
+                 << "program.\n";
 #endif
 #if defined (__APPLE__)
-         cout << "You may need to deactivate System Integrity Protection to use this program. See\n"
-              << "https://www.quora.com/How-do-I-turn-off-the-rootless-in-OS-X-El-Capitan-10-11\n"
-              << "for more information.\n";
+                cout << "You may need to deactivate System Integrity Protection to use this program. See\n"
+                 << "https://www.quora.com/How-do-I-turn-off-the-rootless-in-OS-X-El-Capitan-10-11\n"
+                 << "for more information.\n";
 #endif
-              cout << "\n";
-      } // if
-      myDisk.Close(); // Close and re-open read-only in case of bugs
-   } else allOK = 0; // if
+                cout << "\n";
+            } // if
+            myDisk.Close(); // Close and re-open read-only in case of bugs
+        } else allOK = 0; // if
+    }
 
    if (allOK && myDisk.OpenForRead(deviceFilename)) {
       // store disk information....
@@ -1502,7 +1512,7 @@ int GPTData::DestroyGPT(void) {
             cerr << "Warning! GPT main partition table not overwritten! Error is " << errno << "\n";
             allOK = 0;
          } // if write failed
-      } // if 
+      } // if
       if (!myDisk.Seek(secondHeader.partitionEntriesLBA))
          allOK = 0;
       if (allOK) {
@@ -1913,6 +1923,23 @@ int GPTData::MoveMainTable(uint64_t pteSector) {
     return retval;
 } // GPTData::MoveMainTable()
 
+// Change the start sector for the secondary partition table.
+// Returns 1 on success, 0 on failure
+int GPTData::MoveSecondTable(uint64_t pteSector) {
+    uint64_t pteSize = GetTableSizeInSectors();
+    int retval = 1;
+
+    if ((pteSector > FindLastUsedLBA()) && ((pteSector + pteSize) < diskSize)) {
+        secondHeader.partitionEntriesLBA = pteSector; // (RebuildSecondHeader actually replaces this with lastUsableLBA+1)
+        mainHeader.lastUsableLBA = secondHeader.partitionEntriesLBA - UINT64_C(1);
+        RebuildSecondHeader();
+    } else {
+        cerr << "Unable to set the secondary partition table's location to " << pteSector << "!\n";
+        retval = 0;
+    } // if/else
+    return retval;
+} // GPTData::MoveSecondTable()
+
 // Blank the partition array
 void GPTData::BlankPartitions(void) {
    uint32_t i;
@@ -2287,7 +2314,7 @@ uint64_t GPTData::FindFirstAvailable(uint64_t start) {
 } // GPTData::FindFirstAvailable()
 
 // Returns the LBA of the start of the first partition on the disk (by
-// sector number), or 0 if there are no partitions defined.
+// sector number), or UINT64_MAX if there are no partitions defined.
 uint64_t GPTData::FindFirstUsedLBA(void) {
     uint32_t i;
     uint64_t firstFound = UINT64_MAX;
@@ -2299,6 +2326,20 @@ uint64_t GPTData::FindFirstUsedLBA(void) {
     } // for
     return firstFound;
 } // GPTData::FindFirstUsedLBA()
+
+// Returns the LBA of the end of the last partition on the disk (by
+// sector number), or 0 if there are no partitions defined.
+uint64_t GPTData::FindLastUsedLBA(void) {
+    uint32_t i;
+    uint64_t lastFound = 0;
+
+    for (i = 0; i < numParts; i++) {
+        if ((partitions[i].IsUsed()) && (partitions[i].GetFirstLBA() > lastFound)) {
+            lastFound = partitions[i].GetLastLBA();
+        } // if
+    } // for
+    return lastFound;
+} // GPTData::FindLastUsedLBA()
 
 // Finds the first available sector in the largest block of unallocated
 // space on the disk. Returns 0 if there are no available blocks left

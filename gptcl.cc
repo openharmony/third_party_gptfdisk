@@ -1,7 +1,7 @@
 /*
     Implementation of GPTData class derivative with popt-based command
     line processing
-    Copyright (C) 2010-2022 Roderick W. Smith
+    Copyright (C) 2010-2024 Roderick W. Smith
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
    int opt, numOptions = 0, saveData = 0, neverSaveData = 0;
    int partNum = 0, newPartNum = -1, saveNonGPT = 1, retval = 0, pretend = 0;
    int byteSwapPartNum = 0;
-   uint64_t low, high, startSector, endSector, sSize, mainTableLBA;
+   uint64_t low, high, startSector, endSector, sSize, mainTableLBA, secondTableLBA;
    uint64_t temp; // temporary variable; free to use in any case
    char *device;
    string cmd, typeGUID, name;
@@ -85,7 +85,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
       {"recompute-chs", 'C', POPT_ARG_NONE, NULL, 'C', "recompute CHS values in protective/hybrid MBR", ""},
       {"delete", 'd', POPT_ARG_INT, &deletePartNum, 'd', "delete a partition", "partnum"},
       {"display-alignment", 'D', POPT_ARG_NONE, NULL, 'D', "show number of sectors per allocation block", ""},
-      {"move-second-header", 'e', POPT_ARG_NONE, NULL, 'e', "move second header to end of disk", ""},
+      {"move-second-header", 'e', POPT_ARG_NONE, NULL, 'e', "move second/backup header to end of disk", ""},
       {"end-of-largest", 'E', POPT_ARG_NONE, NULL, 'E', "show end of largest free block", ""},
       {"first-in-largest", 'f', POPT_ARG_NONE, NULL, 'f', "show start of the largest free block", ""},
       {"first-aligned-in-largest", 'F', POPT_ARG_NONE, NULL, 'F', "show start of the largest free block, aligned", ""},
@@ -94,7 +94,8 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
       {"hybrid", 'h', POPT_ARG_STRING, &hybrids, 'h', "create hybrid MBR", "partnum[:partnum...][:EE]"},
       {"info", 'i', POPT_ARG_INT, &infoPartNum, 'i', "show detailed information on partition", "partnum"},
       {"align-end", 'I', POPT_ARG_NONE, NULL, 'I', "align partition end points", ""},
-      {"move-main-table", 'j', POPT_ARG_INT, &mainTableLBA, 'j', "adjust the location of the main partition table", "sector"},
+      {"move-main-table", 'j', POPT_ARG_INT, &mainTableLBA, 'j', "change the start sector of the main partition table", "sector"},
+      {"move-backup-table", 'k', POPT_ARG_INT, &secondTableLBA, 'k', "change the start sector of the second/backup partition table", "sector"},
       {"load-backup", 'l', POPT_ARG_STRING, &backupFile, 'l', "load GPT backup from file", "file"},
       {"list-types", 'L', POPT_ARG_NONE, NULL, 'L', "list known partition types", ""},
       {"gpttombr", 'm', POPT_ARG_STRING, &mbrParts, 'm', "convert GPT to MBR", "partnum[:partnum...]"},
@@ -156,9 +157,10 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
 
    // Assume first non-option argument is the device filename....
    device = (char*) poptGetArg(poptCon);
-   poptResetContext(poptCon);
 
    if (device != NULL) {
+      device = strdup(device);
+      poptResetContext(poptCon);
       JustLooking(); // reset as necessary
       BeQuiet(); // Tell called functions to be less verbose & interactive
       if (LoadPartitions((string) device)) {
@@ -287,6 +289,14 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                        neverSaveData = 1;
                    } // if/else
                    break;
+               case 'k':
+                   if (MoveSecondTable(secondTableLBA)) {
+                       JustLooking(0);
+                       saveData = 1;
+                   } else {
+                       neverSaveData = 1;
+                   } // if/else
+                    break;
                case 'l':
                   LoadBackupFile(backupFile, saveData, neverSaveData);
                   free(backupFile);
@@ -331,8 +341,10 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                   startSector = FindFirstInLargest();
                   Align(&startSector);
                   endSector = FindLastInFree(startSector, alignEnd);
-                  if (largestPartNum <= 0)
+                  if (largestPartNum <= 0) {
                      largestPartNum = FindFirstFreePart() + 1;
+                     newPartNum = largestPartNum - 1;
+                  }
                   if (CreatePartition(largestPartNum - 1, startSector, endSector)) {
                      saveData = 1;
                   } else {
@@ -498,6 +510,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
          cerr << "Error encountered; not saving changes.\n";
          retval = 4;
       } // if
+      free(device);
    } // if (device != NULL)
    poptFreeContext(poptCon);
    return retval;
