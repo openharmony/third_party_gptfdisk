@@ -113,9 +113,9 @@ int DiskIO::OpenForWrite(void) {
 // Close the disk device. Note that this does NOT erase the stored filenames,
 // so the file can be re-opened without specifying the filename.
 void DiskIO::Close(void) {
-    if (isOpen) {
-        CloseHandle(fd);
-        fd = INVALID_HANDLE_VALUE;
+   if (isOpen) {
+      CloseHandle(fd);
+      fd = INVALID_HANDLE_VALUE;
     }
    isOpen = 0;
    openForWrite = 0;
