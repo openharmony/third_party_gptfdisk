@@ -1,6 +1,6 @@
 [
     {
-        "Name"                  : "gptfdisk",
+        "Name"                  : "GPT fdisk",
         "License"               : "GPL-2.0-or-later",
         "License File"          : "COPYING",
         "Version Number"        : "1.0.10",
