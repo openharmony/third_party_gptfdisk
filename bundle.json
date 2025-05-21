@@ -24,11 +24,11 @@
         "rom": "",
         "ram": "",
         "deps": {
-            "components": [],
-            "third_party": [
+            "components": [
                 "e2fsprogs",
                 "popt"
-            ]
+            ],
+            "third_party": []
         },
         "build": {
             "sub_component": [],
