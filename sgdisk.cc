@@ -75,6 +75,9 @@ static int ohos_dump(char* device) {
 int main(int argc, char *argv[]) {
    for (int i = 0; i < argc; i++) {
      if (!strcmp("--ohos-dump", argv[i])) {
+       if (i + 1 >= argc) {
+        return -1;
+       }
        return ohos_dump(argv[i + 1]);
      }
    }
