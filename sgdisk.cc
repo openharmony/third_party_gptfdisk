@@ -31,13 +31,6 @@ static int ohos_dump(char* device) {
    GPTData gptData;
    GPTPart partData;
    int numParts = 0;
-   stringstream res;
-
-   /* Silence noisy underlying library */
-   int stdout = dup(STDOUT_FILENO);
-   int silence = open("/dev/null", 0);
-   dup2(silence, STDOUT_FILENO);
-   dup2(silence, STDERR_FILENO);
 
    if (!mbrData.ReadMBRData((string)device)) {
      cerr << "Failed to read MBR" << endl;
@@ -46,26 +39,27 @@ static int ohos_dump(char* device) {
 
    switch(mbrData.GetValidity()) {
      case mbr:
-       res  << "DISK mbr" << endl;
+       cout << "DISK mbr" << endl;
        for (int i = 0; i < MAX_MBR_PARTS; i++) {
          if(mbrData.GetLength(i) > 0) {
-           res  << "PART " << (i + 1) << " " << hex << (int)mbrData.GetType(i) << dec << endl;
+           cout << "PART " << (i + 1) << " " << hex << (int)mbrData.GetType(i) << dec << endl;
          }
        }
        break;
      case gpt:
        gptData.JustLooking();
+       gptData.BeQuiet();
        if(!gptData.LoadPartitions((string)device)) {
          cerr << "Failed to read GPT" << endl;
          return 9;
        }
 
-       res  << "DISK gpt " << gptData.GetDiskGUID() << endl;
+       cout << "DISK gpt " << gptData.GetDiskGUID() << endl;
        numParts = gptData.GetNumParts();
        for (int i = 0; i < numParts; i++) {
          partData = gptData[i];
          if (partData.GetFirstLBA() > 0) {
-           res  << "PART " << (i + 1) << " " << partData.GetType() << " " << partData.GetUniqueGUID() << " "
+           cout << "PART " << (i + 1) << " " << partData.GetType() << " " << partData.GetUniqueGUID() << " "
                << partData.GetDescription() << endl;
          }
        }
@@ -75,9 +69,6 @@ static int ohos_dump(char* device) {
        return 10;
    }
 
-   /* Write our actual output */
-   string resString = res.str();
-   write(stdout, resString.c_str(), resString.length());
    return 0;
 }
 
