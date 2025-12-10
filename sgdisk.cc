@@ -46,9 +46,9 @@ static int ohos_dump(char* device) {
          }
        }
        break;
+     case hybrid:
      case gpt:
        gptData.JustLooking();
-       gptData.BeQuiet();
        if(!gptData.LoadPartitions((string)device)) {
          cerr << "Failed to read GPT" << endl;
          return 9;
