@@ -319,6 +319,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                   break;
                case 'n':
                   JustLooking(0);
+                  cout << "Create partition option: " << newPartInfo << ".\n";
                   newPartNum = (int) GetInt(newPartInfo, 1) - 1;
                   if (newPartNum < 0)
                      newPartNum = FindFirstFreePart();
@@ -398,6 +399,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                   break;
                case 't':
                   JustLooking(0);
+                  cout << "Change typecode option: " << (typeCode ? typeCode : "NULL") << ".\n";
                   partNum = (int) GetInt(typeCode, 1) - 1;
                   if (partNum < 0)
                      partNum = newPartNum;

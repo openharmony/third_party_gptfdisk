@@ -223,8 +223,10 @@ uint64_t IeeeToInt(string inValue, uint64_t sSize, uint64_t low, uint64_t high, 
          response = high - response;
    } // if   
 
-   if (badInput)
+   if (badInput) {
+      cerr << "Invalid input: '" << inValue << "', response: " << response << ".\n";
       response = UINT64_C(0);
+   }
 
    return response;
 } // IeeeToInt()
