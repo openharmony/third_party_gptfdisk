@@ -1991,9 +1991,21 @@ uint32_t GPTData::CreatePartition(uint32_t partNum, uint64_t startSector, uint64
             partitions[partNum].SetLastLBA(endSector);
             partitions[partNum].SetType(DEFAULT_GPT_TYPE);
             partitions[partNum].RandomizeUniqueGUID();
-         } else retval = 0; // if free space until endSector
-      } else retval = 0; // if startSector is free
-   } else retval = 0; // if legal partition number
+         } else {
+            cerr << "Insufficent space: startSector: " << startSector << ", endSector: " << endSector
+                 << ", maxSector: " << FindLastInFree(startSector) << ".\n";
+            retval = 0; // if free space until endSector
+         }
+      } else {
+         cerr << "startSector: " << startSector << ", endSector: " << endSector
+              << ", free startSector: "<< (IsFree(startSector) ? "true" : "false") << ".\n";
+         retval = 0; // if startSector is free
+      }
+   } else {
+      cerr << "partNum: " << (partNum + 1) << ", numParts: " << numParts
+           << ", IsFreePartNum: " << (IsFreePartNum(partNum) ? "true" : "false") << ".\n";
+      retval = 0; // if legal partition number
+   }
    return retval;
 } // GPTData::CreatePartition(partNum, startSector, endSector)
 
@@ -2152,7 +2164,10 @@ int GPTData::ChangePartType(uint32_t partNum, PartType theGUID) {
 
    if (!IsFreePartNum(partNum)) {
       partitions[partNum].SetType(theGUID);
-   } else retval = 0;
+   } else {
+      cerr << "partNum: " << partNum << ", numParts: " << numParts << ".\n";
+      retval = 0;
+   }
    return retval;
 } // GPTData::ChangePartType()
 
