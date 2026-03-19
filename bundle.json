@@ -35,6 +35,9 @@
             "inner_kits": [
                 {
                     "name": "//third_party/gptfdisk:sgdisk"
+                },
+                {
+                    "name": "//third_party/gptfdisk:ohos_fixparts"
                 }
             ],
             "test": []
