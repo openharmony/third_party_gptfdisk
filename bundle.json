@@ -31,7 +31,9 @@
             "third_party": []
         },
         "build": {
-            "sub_component": [],
+            "sub_component": [
+                "//third_party/gptfdisk:ohos_fixparts"
+            ],
             "inner_kits": [
                 {
                     "name": "//third_party/gptfdisk:sgdisk"
