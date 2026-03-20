@@ -10,13 +10,13 @@
 #ifndef OHOS_MBR_HELPER_H
 #define OHOS_MBR_HELPER_H
 
-#include <string>
 #include <cstdint>
+#include <string>
 
 // MBR operation result codes
 enum class MbrResult {
     SUCCESS = 0,
-    ERROR_INVALID_DEVICE = 1,
+    ERROR_UNKNOWN = 1,
     ERROR_READ_FAILED = 2,
     ERROR_WRITE_FAILED = 3,
     ERROR_INVALID_PARTITION = 4,
@@ -24,8 +24,10 @@ enum class MbrResult {
     ERROR_NOT_MBR_DISK = 6,
     ERROR_GPT_DISK = 7,
     ERROR_EMPTY_PARTITION = 8,
-    ERROR_UNKNOWN = 100
+    ERROR_INVALID_DEVICE = 9
 };
+
+#define MIN_MBR_PARTS 1
 
 // MBR partition type code modifier class
 class OhosMbrHelper {
@@ -34,10 +36,10 @@ public:
     ~OhosMbrHelper();
 
     // Load MBR data
-    MbrResult LoadMbrData(const std::string& device);
+    MbrResult LoadMbrData(const std::string &device);
 
     // Validate device path
-    MbrResult ValidateDevice(const std::string& device);
+    MbrResult ValidateDevice(const std::string &device);
 
     // Read MBR data from device
     MbrResult ReadMbrFromDevice();
@@ -45,7 +47,7 @@ public:
     // Validate MBR data
     MbrResult ValidateMbrData();
 
- // Change partition type code
+    // Change partition type code
     // partNum: Partition number (1-128)
     // typeCode: Type code (0x01-0xFF)
     MbrResult ChangePartitionType(int partNum, uint8_t typeCode);
@@ -60,13 +62,13 @@ public:
     std::string GetLastError() const;
 
 private:
-    void* mbrData_;  // BasicMBRData object pointer
+    void *mbrData_; // BasicMBRData object pointer
     std::string lastError_;
     std::string device_;
     bool loaded_;
 
     // Set error message
-    void SetError(const std::string& error);
+    void SetError(const std::string &error);
 };
 
 #endif // OHOS_MBR_HELPER_H
