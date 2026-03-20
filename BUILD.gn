@@ -47,12 +47,15 @@ ohos_executable("sgdisk") {
   part_name = "gptfdisk"
   install_images = [ "system" ]
 }
+
 ohos_executable("ohos_fixparts") {
   install_enable = true
+
   sources = [
     "ohos/ohos_fixparts.cpp",
     "ohos/ohos_mbr_helper.cpp",
   ]
+
   sources += [
     "basicmbr.cc",
     "crc32.cc",
@@ -61,10 +64,11 @@ ohos_executable("ohos_fixparts") {
     "mbrpart.cc",
     "support.cc",
   ]
+
   public_configs = [ ":gptdisk_config" ]
-  external_deps = [
-    "e2fsprogs:libext2_uuid",
-  ]
+
+  external_deps = [ "e2fsprogs:libext2_uuid" ]
+
   subsystem_name = "thirdparty"
   part_name = "gptfdisk"
   install_images = [ "system" ]
