@@ -15,14 +15,13 @@
 
 // Command line arguments structure
 struct OhosFixpartsArgs {
-    std::string device;        // Device path
-    bool printMBR;            // Print MBR partition table
-    bool showHelp;            // Show help information
-    int partitionNum;         // Partition number
-    uint8_t typeCode;         // Type code
+    std::string device; // Device path
+    bool printMBR;      // Print MBR partition table
+    bool showHelp;      // Show help information
+    int partitionNum;   // Partition number
+    uint8_t typeCode;   // Type code
 
-    OhosFixpartsArgs()
-        : printMBR(false), showHelp(false), partitionNum(-1), typeCode(0) {}
+    OhosFixpartsArgs() : printMBR(false), showHelp(false), partitionNum(-1), typeCode(0) {}
 };
 
 // Main program class
@@ -32,22 +31,25 @@ public:
     ~OhosFixparts();
 
     // Parse command line arguments
-    MbrResult ParseArgs(int argc, char* argv[], OhosFixpartsArgs& args);
+    MbrResult ParseArgs(int argc, char *argv[], OhosFixpartsArgs &args);
 
     // Execute partition type code modification
-    int Run(const OhosFixpartsArgs& args);
+    int Run(const OhosFixpartsArgs &args);
 
     // Show help information
-    void ShowHelp(const char* programName);
+    void ShowHelp(const char *programName);
 
 private:
     OhosMbrHelper helper_;
 
     // Parse hexadecimal type code
-    bool ParseTypeCode(const std::string& str, uint8_t& code);
+    bool ParseTypeCode(const std::string &str, uint8_t &code);
+
+    // Parse partnumber
+    MbrResult ParsePartNum(const std::string &str, int &partitionNum);
 
     // Parse option string (format: partnum:typecode) and validate all parameters
-    MbrResult ParseOption(const std::string& option, int& partitionNum, uint8_t& typeCode);
+    MbrResult ParseOption(const std::string &option, int &partitionNum, uint8_t &typeCode);
 };
 
 #endif // OHOS_FIXPARTS_H
