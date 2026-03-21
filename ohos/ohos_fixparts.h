@@ -18,10 +18,11 @@ struct OhosFixpartsArgs {
     std::string device; // Device path
     bool printMBR;      // Print MBR partition table
     bool showHelp;      // Show help information
+    bool hasTypeCode;   // Flag to indicate if -t option is present
     int partitionNum;   // Partition number
     uint8_t typeCode;   // Type code
 
-    OhosFixpartsArgs() : printMBR(false), showHelp(false), partitionNum(-1), typeCode(0) {}
+    OhosFixpartsArgs() : printMBR(false), showHelp(false), hasTypeCode(false), partitionNum(-1), typeCode(0) {}
 };
 
 // Main program class
