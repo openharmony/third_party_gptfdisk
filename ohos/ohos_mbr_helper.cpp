@@ -8,33 +8,33 @@
  */
 
 #include "ohos_mbr_helper.h"
-#include "../basicmbr.h"
+
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 
-OhosMbrHelper::OhosMbrHelper() : mbrData_(nullptr), loaded_(false)
+OhosMbrHelper::OhosMbrHelper() : mbrData_(nullptr), device_(""), loaded_(false)
 {
-    mbrData_ = new BasicMBRData();
+    mbrData_ = new (std::nothrow) BasicMBRData();
+    if (mbrData_ == nullptr) {
+        std::cerr << "Failed to allocate memory for MBR data" << std::endl;
+        loaded_ = false;
+    }
 }
 
 OhosMbrHelper::~OhosMbrHelper()
 {
     if (mbrData_ != nullptr) {
-        delete static_cast<BasicMBRData *>(mbrData_);
+        delete mbrData_;
         mbrData_ = nullptr;
     }
 }
 
 MbrResult OhosMbrHelper::LoadMbrData(const std::string &device)
 {
-    MbrResult result = ValidateDevice(device);
-    if (result != MbrResult::SUCCESS) {
-        return result;
-    }
-
+    // mbrData_ is initialized in constructor, no need to check here
     device_ = device;
-    result = ReadMbrFromDevice();
+
+    MbrResult result = ReadMbrFromDevice();
     if (result != MbrResult::SUCCESS) {
         return result;
     }
@@ -44,28 +44,16 @@ MbrResult OhosMbrHelper::LoadMbrData(const std::string &device)
         return result;
     }
 
-    BasicMBRData *mbr = static_cast<BasicMBRData *>(mbrData_);
-    mbr->MakeItLegal();
+    mbrData_->MakeItLegal();
     loaded_ = true;
 
     return MbrResult::SUCCESS;
 }
 
-MbrResult OhosMbrHelper::ValidateDevice(const std::string &device)
-{
-    if (device.empty()) {
-        SetError("Device path is empty");
-        return MbrResult::ERROR_INVALID_DEVICE;
-    }
-    return MbrResult::SUCCESS;
-}
-
 MbrResult OhosMbrHelper::ReadMbrFromDevice()
 {
-    BasicMBRData *mbr = static_cast<BasicMBRData *>(mbrData_);
-
-    if (!mbr->ReadMBRData(device_)) {
-        SetError("Failed to read MBR data from device: " + device_);
+    if (!mbrData_->ReadMBRData(device_)) {
+        std::cerr << "Failed to read MBR data from device: " << device_ << std::endl;
         return MbrResult::ERROR_READ_FAILED;
     }
 
@@ -74,17 +62,16 @@ MbrResult OhosMbrHelper::ReadMbrFromDevice()
 
 MbrResult OhosMbrHelper::ValidateMbrData()
 {
-    BasicMBRData *mbr = static_cast<BasicMBRData *>(mbrData_);
-    MBRValidity validity = mbr->GetValidity();
+    MBRValidity validity = mbrData_->GetValidity();
 
     if (validity == gpt || validity == hybrid) {
-        SetError("Device appears to be a GPT disk, not MBR");
-        return MbrResult::ERROR_GPT_DISK;
+        std::cerr << "Device appears to be a GPT disk, not MBR" << std::endl;
+        return MbrResult::ERROR_GPT_PART;
     }
 
     if (validity == invalid) {
-        SetError("Invalid MBR data on device");
-        return MbrResult::ERROR_NOT_MBR_DISK;
+        std::cerr << "Invalid MBR data on device" << std::endl;
+        return MbrResult::ERROR_NOT_SUPPORT_PART;
     }
 
     return MbrResult::SUCCESS;
@@ -94,42 +81,33 @@ MbrResult OhosMbrHelper::ChangePartitionType(int partNum, uint8_t typeCode)
 {
     // Check if MBR data is loaded
     if (!loaded_) {
-        SetError("MBR data not loaded. Call LoadMbrData() first.");
+        std::cerr << "MBR data not loaded. Call LoadMbrData() first." << std::endl;
         return MbrResult::ERROR_READ_FAILED;
     }
 
     // Validate partition number range (1-128)
     if (partNum < MIN_MBR_PARTS || partNum > MAX_MBR_PARTS) {
-        std::ostringstream oss;
-        oss << "Invalid partition number " << partNum << " (must be 1-128)";
-        SetError(oss.str());
-        return MbrResult::ERROR_INVALID_PARTITION;
+        std::cerr << "Invalid partition number (must be 1-128): " << partNum << std::endl;
+        return MbrResult::ERROR_INVALID_ARGUMENT;
     }
 
     // Validate range before conversion to prevent truncation
-    if (typeCode < 0x01 || typeCode > 0xFF) {
-        std::ostringstream oss;
-        oss << "Invalid typecode " << typeCode << " (must be 0x01 - 0xFF)";
-        SetError(oss.str());
-        return MbrResult::ERROR_INVALID_TYPECODE;
+    if (typeCode < MIN_TYPE_CODE || typeCode > MAX_TYPE_CODE) {
+        std::cerr << "Invalid typecode (must be 0x01-0xFF): 0x" << std::hex << static_cast<int>(typeCode) << std::dec
+                  << std::endl;
+        return MbrResult::ERROR_INVALID_ARGUMENT;
     }
 
-    BasicMBRData *mbr = static_cast<BasicMBRData *>(mbrData_);
-
     // Check if partition exists and is not empty
-    if (mbr->GetLength(partNum - 1) == 0) {
-        std::ostringstream oss;
-        oss << "Partition " << partNum << " is empty or does not exist";
-        SetError(oss.str());
-        return MbrResult::ERROR_EMPTY_PARTITION;
+    if (mbrData_->GetLength(partNum - 1) == 0) {
+        std::cerr << "Partition " << partNum << " is empty or does not exist" << std::endl;
+        return MbrResult::ERROR_INVALID_ARGUMENT;
     }
 
     // Set partition type code
-    int result = mbr->SetPartType(partNum - 1, typeCode);
+    int result = mbrData_->SetPartType(partNum - 1, typeCode);
     if (result == 0) {
-        std::ostringstream oss;
-        oss << "Failed to set type code for partition " << partNum;
-        SetError(oss.str());
+        std::cerr << "Failed to set type code for partition: " << partNum << std::endl;
         return MbrResult::ERROR_UNKNOWN;
     }
 
@@ -139,24 +117,17 @@ MbrResult OhosMbrHelper::ChangePartitionType(int partNum, uint8_t typeCode)
 MbrResult OhosMbrHelper::SaveMbrData()
 {
     if (!loaded_) {
-        SetError("MBR data not loaded. Call LoadMbrData() first.");
+        std::cerr << "MBR data not loaded. Call LoadMbrData() first." << std::endl;
         return MbrResult::ERROR_READ_FAILED;
     }
 
-    BasicMBRData *mbr = static_cast<BasicMBRData *>(mbrData_);
-
-    if (!mbr->WriteMBRData()) {
-        SetError("Failed to write MBR data to device: " + device_);
+    if (!mbrData_->WriteMBRData()) {
+        std::cerr << "Failed to write MBR data to device: " << device_ << std::endl;
         return MbrResult::ERROR_WRITE_FAILED;
     }
 
-    mbr->DiskSync();
+    mbrData_->DiskSync();
     return MbrResult::SUCCESS;
-}
-
-std::string OhosMbrHelper::GetLastError() const
-{
-    return lastError_;
 }
 
 void OhosMbrHelper::DisplayMBRData()
@@ -166,13 +137,8 @@ void OhosMbrHelper::DisplayMBRData()
         return;
     }
 
-    BasicMBRData *mbr = static_cast<BasicMBRData *>(mbrData_);
-
-    mbr->DisplayMBRData();
-}
-
-void OhosMbrHelper::SetError(const std::string &error)
-{
-    lastError_ = error;
-    std::cerr << error << std::endl;
+    // Reuse existing DisplayMBRData implementation from basicmbr.cc
+    // This provides more comprehensive MBR information including disk size,
+    // disk identifier, and detailed partition information
+    mbrData_->DisplayMBRData();
 }
