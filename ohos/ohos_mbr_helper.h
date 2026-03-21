@@ -13,33 +13,31 @@
 #include <cstdint>
 #include <string>
 
+#include "basicmbr.h"
+
 // MBR operation result codes
 enum class MbrResult {
     SUCCESS = 0,
     ERROR_UNKNOWN = 1,
     ERROR_READ_FAILED = 2,
     ERROR_WRITE_FAILED = 3,
-    ERROR_INVALID_PARTITION = 4,
-    ERROR_INVALID_TYPECODE = 5,
-    ERROR_NOT_MBR_DISK = 6,
-    ERROR_GPT_DISK = 7,
-    ERROR_EMPTY_PARTITION = 8,
-    ERROR_INVALID_DEVICE = 9
+    ERROR_INVALID_ARGUMENT = 4,
+    ERROR_NOT_SUPPORT_PART = 5,
+    ERROR_GPT_PART = 6
 };
 
 #define MIN_MBR_PARTS 1
+#define MIN_TYPE_CODE 0x01
+#define MAX_TYPE_CODE 0xFF
 
 // MBR partition type code modifier class
-class OhosMbrHelper {
+class OhosMbrHelper final {
 public:
     OhosMbrHelper();
     ~OhosMbrHelper();
 
     // Load MBR data
     MbrResult LoadMbrData(const std::string &device);
-
-    // Validate device path
-    MbrResult ValidateDevice(const std::string &device);
 
     // Read MBR data from device
     MbrResult ReadMbrFromDevice();
@@ -58,17 +56,10 @@ public:
     // Display MBR partition table
     void DisplayMBRData();
 
-    // Get error message
-    std::string GetLastError() const;
-
 private:
-    void *mbrData_; // BasicMBRData object pointer
-    std::string lastError_;
+    BasicMBRData *mbrData_; // MBR data object pointer (initialized in constructor)
     std::string device_;
     bool loaded_;
-
-    // Set error message
-    void SetError(const std::string &error);
 };
 
 #endif // OHOS_MBR_HELPER_H
