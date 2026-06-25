@@ -257,6 +257,24 @@ uint32_t DiskIO::GetNumSecsPerTrack(void) {
    return numSecs;
 } // DiskIO::GetNumSecsPerTrack()
 
+static int IoctlRetry(int fd) {
+   int ret = -1;
+   int etry_count = 0;
+   const int max_retries = 6;
+   const int retry_delay_us = 50000;
+
+   while (retry_count < max_retries) {
+      ret = ioctl(fd, BLKRRPART);
+      if (ret == 0) {
+         break;
+      }
+      retry_count++;
+      usleep(retry_delay_us * retry_count);
+   }
+
+   return ret;
+}
+
 // Resync disk caches so the OS uses the new partition table. This code varies
 // a lot from one OS to another.
 // Returns 1 on success, 0 if the kernel continues to use the old partition table.
@@ -293,9 +311,12 @@ int DiskIO::DiskSync(void) {
       platformFound++;
 #endif
 #ifdef __linux__
-      sleep(1); // Theoretically unnecessary, but ioctl() fails sometimes if omitted....
+      /*
+      * sleep(1); // Theoretically unnecessary, but ioctl() fails sometimes if omitted....
+      * It's too heavy, change max retry function to reduce sleep time
+      */
       fsync(fd);
-      i = ioctl(fd, BLKRRPART);
+      i = IoctlRetry(fd);
       if (i) {
          cout << "Warning: The kernel is still using the old partition table.\n"
               << "The new table will be used at the next reboot or after you\n"
