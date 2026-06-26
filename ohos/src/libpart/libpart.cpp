@@ -9,6 +9,10 @@
 
 #include "libpart/libpart.h"
 
+#include <unistd.h>
+#include <linux/fs.h>
+#include <sys/ioctl.h>
+
 int IoctlRetry(int fd) {
    int ret = -1;
    int retry_count = 0;
