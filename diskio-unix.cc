@@ -36,6 +36,7 @@
 #include <sstream>
 
 #include "diskio.h"
+#include "libpart/libpart.h"
 
 using namespace std;
 
