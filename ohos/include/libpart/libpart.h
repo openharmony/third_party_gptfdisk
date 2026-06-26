@@ -10,10 +10,6 @@
 #ifndef OHOS_LIBPART_H
 #define OHOS_LIBPART_H
 
-#include <unistd.h>
-#include <linux/fs.h>
-#include <sys/ioctl.h>
-
 int IoctlRetry(int fd);
 
 #endif // OHOS_LIBPART_H
