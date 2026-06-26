@@ -58,6 +58,7 @@ ohos_executable("ohos_fixparts") {
   sources = [
     "ohos/ohos_fixparts.cpp",
     "ohos/ohos_mbr_helper.cpp",
+    "ohos/src/libpart/libpart.cpp",
   ]
 
   sources += [
