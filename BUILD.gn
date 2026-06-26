@@ -18,6 +18,9 @@ config("gptdisk_config") {
     "-Wno-register",
     "-Wno-unused-but-set-variable",
   ]
+  include_dirs = [
+    "ohos/include",
+  ]
 }
 ohos_executable("sgdisk") {
   install_enable = true
@@ -38,9 +41,6 @@ ohos_executable("sgdisk") {
     "sgdisk.cc",
     "support.cc",
     "ohos/src/libpart/libpart.cpp",
-  ]
-  include_dirs = [
-    "ohos/include",
   ]
   public_configs = [ ":gptdisk_config" ]
   external_deps = [
