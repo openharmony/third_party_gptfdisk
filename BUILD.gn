@@ -37,6 +37,10 @@ ohos_executable("sgdisk") {
     "parttypes.cc",
     "sgdisk.cc",
     "support.cc",
+    "ohos/src/libpart/libpart.cpp",
+  ]
+  include_dirs = [
+    "ohos/include",
   ]
   public_configs = [ ":gptdisk_config" ]
   external_deps = [
