@@ -36,6 +36,7 @@
 #include <sstream>
 
 #include "diskio.h"
+#include "libpart/libpart.h"
 
 using namespace std;
 
@@ -293,9 +294,12 @@ int DiskIO::DiskSync(void) {
       platformFound++;
 #endif
 #ifdef __linux__
-      sleep(1); // Theoretically unnecessary, but ioctl() fails sometimes if omitted....
+      /*
+      * sleep(1); // Theoretically unnecessary, but ioctl() fails sometimes if omitted....
+      * It's too heavy, change max retry function to reduce sleep time
+      */
       fsync(fd);
-      i = ioctl(fd, BLKRRPART);
+      i = IoctlRetry(fd);
       if (i) {
          cout << "Warning: The kernel is still using the old partition table.\n"
               << "The new table will be used at the next reboot or after you\n"
