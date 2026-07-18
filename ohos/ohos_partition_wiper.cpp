@@ -30,18 +30,22 @@ uint64_t Min64(uint64_t one, uint64_t two) {
 // heap allocation and zero-fill of ~1 MiB.
 int ZeroSectors(DiskIO *disk, uint64_t startSector, uint64_t numSectors,
                 uint32_t blockSize, std::vector<unsigned char> &zeroes) {
-   uint64_t chunkSectors, thisPass;
+   uint64_t chunkSectors;
+   uint64_t thisPass;
    int bytesToWrite;
 
-   if (numSectors == 0)
+   if (numSectors == 0) {
       return 1;
+   }
 
-   if (blockSize == 0)
+   if (blockSize == 0) {
       blockSize = SECTOR_SIZE;
+   }
 
    chunkSectors = zeroes.size() / blockSize;
-   if (chunkSectors == 0)
+   if (chunkSectors == 0) {
       chunkSectors = 1;
+   }
 
    while (numSectors > 0) {
       thisPass = Min64(numSectors, chunkSectors);
@@ -65,6 +69,42 @@ int ZeroSectors(DiskIO *disk, uint64_t startSector, uint64_t numSectors,
 
    return 1;
 } // ZeroSectors()
+
+// Wipe the front and back signature areas of one created partition. The
+// scratch buffer `zeroes` is reused across both ends and across ranges.
+// Returns false on I/O failure.
+bool WipeOneRange(DiskIO *disk, const WipeRange &range, uint64_t wipeSectors,
+                  uint32_t blockSize, std::vector<unsigned char> &zeroes) {
+   uint64_t length;
+   uint64_t frontSectors;
+   uint64_t backSectors;
+   uint64_t backStart;
+
+   if (range.lastLBA < range.firstLBA) {
+      std::cerr << "Internal error: invalid partition wipe range.\n";
+      return false;
+   } // if
+
+   length = range.lastLBA - range.firstLBA + 1;
+   frontSectors = Min64(length, wipeSectors);
+
+   if (!ZeroSectors(disk, range.firstLBA, frontSectors, blockSize, zeroes)) {
+      return false;
+   } // if
+
+   if (length > frontSectors) {
+      backSectors = Min64(length - frontSectors, wipeSectors);
+      backStart = range.lastLBA - backSectors + 1;
+      if (!ZeroSectors(disk, backStart, backSectors, blockSize, zeroes)) {
+         return false;
+      } // if
+   } // if
+
+   std::cout << "Wiped first/last " << (WIPE_PARTITION_BYTES / 1024)
+             << " KiB of sectors " << range.firstLBA << "-"
+             << range.lastLBA << ".\n";
+   return true;
+} // WipeOneRange()
 } // namespace
 
 void OhosPartitionWiper::RememberRange(uint64_t firstLBA, uint64_t lastLBA) {
@@ -78,10 +118,11 @@ void OhosPartitionWiper::ForgetRange(uint64_t firstLBA, uint64_t lastLBA) {
    std::vector<WipeRange>::iterator iter = ranges_.begin();
 
    while (iter != ranges_.end()) {
-      if ((iter->firstLBA == firstLBA) && (iter->lastLBA == lastLBA))
+      if ((iter->firstLBA == firstLBA) && (iter->lastLBA == lastLBA)) {
          iter = ranges_.erase(iter);
-      else
+      } else {
          ++iter;
+      } // if/else
    } // while
 } // OhosPartitionWiper::ForgetRange()
 
@@ -90,17 +131,18 @@ void OhosPartitionWiper::Clear(void) {
 } // OhosPartitionWiper::Clear()
 
 bool OhosPartitionWiper::WipeAll(DiskIO *disk, uint32_t blockSize) const {
-   uint64_t wipeSectors, length, frontSectors, backSectors, backStart;
-
-   if (ranges_.empty())
+   if (ranges_.empty()) {
       return true;
+   }
 
-   if (blockSize == 0)
+   if (blockSize == 0) {
       blockSize = SECTOR_SIZE;
+   }
 
-   wipeSectors = (WIPE_PARTITION_BYTES + blockSize - 1) / blockSize;
-   if (wipeSectors == 0)
+   uint64_t wipeSectors = (WIPE_PARTITION_BYTES + blockSize - 1) / blockSize;
+   if (wipeSectors == 0) {
       wipeSectors = 1;
+   }
 
    // One reusable zeroed scratch buffer (~1 MiB, block-aligned), shared across
    // every ZeroSectors() call so we don't allocate and zero-fill it per end.
@@ -112,27 +154,9 @@ bool OhosPartitionWiper::WipeAll(DiskIO *disk, uint32_t blockSize) const {
    } // if
 
    for (size_t i = 0; i < ranges_.size(); i++) {
-      if (ranges_[i].lastLBA < ranges_[i].firstLBA) {
-         std::cerr << "Internal error: invalid partition wipe range.\n";
+      if (!WipeOneRange(disk, ranges_[i], wipeSectors, blockSize, zeroes)) {
          return false;
       } // if
-
-      length = ranges_[i].lastLBA - ranges_[i].firstLBA + 1;
-      frontSectors = Min64(length, wipeSectors);
-
-      if (!ZeroSectors(disk, ranges_[i].firstLBA, frontSectors, blockSize, zeroes))
-         return false;
-
-      if (length > frontSectors) {
-         backSectors = Min64(length - frontSectors, wipeSectors);
-         backStart = ranges_[i].lastLBA - backSectors + 1;
-         if (!ZeroSectors(disk, backStart, backSectors, blockSize, zeroes))
-            return false;
-      } // if
-
-      std::cout << "Wiped first/last " << (WIPE_PARTITION_BYTES / 1024)
-                << " KiB of sectors " << ranges_[i].firstLBA << "-"
-                << ranges_[i].lastLBA << ".\n";
    } // for
 
    return true;
@@ -140,8 +164,9 @@ bool OhosPartitionWiper::WipeAll(DiskIO *disk, uint32_t blockSize) const {
 
 bool OhosParseWipeMode(const char *mode, WipeMode &out) {
    out = WipeMode::WIPE_NEVER;
-   if (mode == NULL)
+   if (mode == nullptr) {
       return true;
+   }
 
    std::string value = ToLower(mode);
    if (value == "never") {

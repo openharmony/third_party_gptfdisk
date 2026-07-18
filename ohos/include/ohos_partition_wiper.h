@@ -57,7 +57,7 @@ private:
 
 // Parse a --wipe-partitions mode token ("never"/"always", case insensitive).
 // On success sets `out` and returns true; on an unrecognized value prints a
-// diagnostic and returns false. A NULL mode yields WIPE_NEVER.
+// diagnostic and returns false. A nullptr mode yields WIPE_NEVER.
 bool OhosParseWipeMode(const char *mode, WipeMode &out);
 
 #endif // OHOS_PARTITION_WIPER_H

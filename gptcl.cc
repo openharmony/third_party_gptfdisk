@@ -73,7 +73,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
    uint64_t temp; // temporary variable; free to use in any case
    char *device;
    string cmd, typeGUID, name;
-   char *wipeMode = NULL;
+   char *wipeMode = nullptr;
    OhosPartitionWiper wiper;
    PartType typeHelper;
 
@@ -252,14 +252,16 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                      startSector = operator[](deletePartNum - 1).GetFirstLBA();
                      endSector = operator[](deletePartNum - 1).GetLastLBA();
                   } else {
-                     startSector = endSector = 0;
+                     startSector = 0;
+                     endSector = 0;
                   } // if/else
                   if (DeletePartition(deletePartNum - 1) == 0) {
                      cerr << "Error " << errno << " deleting partition!\n";
                      neverSaveData = 1;
                   } else {
-                     if (startSector || endSector)
+                     if (startSector || endSector) {
                         wiper.ForgetRange(startSector, endSector);
+                     } // if
                      saveData = 1;
                   } // if/else
                                                    break;
