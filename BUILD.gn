@@ -19,6 +19,7 @@ config("gptdisk_config") {
     "-Wno-unused-but-set-variable",
   ]
   include_dirs = [
+    ".",
     "ohos/include",
   ]
 }
@@ -40,6 +41,7 @@ ohos_executable("sgdisk") {
     "parttypes.cc",
     "sgdisk.cc",
     "support.cc",
+    "ohos/ohos_partition_wiper.cpp",
     "ohos/src/libpart/libpart.cpp",
   ]
   public_configs = [ ":gptdisk_config" ]

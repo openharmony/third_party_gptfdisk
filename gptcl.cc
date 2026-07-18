@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <popt.h>
 #include "gptcl.h"
+#include "ohos_partition_wiper.h"
 
 using namespace std;
 
@@ -72,6 +73,8 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
    uint64_t temp; // temporary variable; free to use in any case
    char *device;
    string cmd, typeGUID, name;
+   char *wipeMode = nullptr;
+   OhosPartitionWiper wiper;
    PartType typeHelper;
 
    struct poptOption theOptions[] =
@@ -115,6 +118,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
       {"disk-guid", 'U', POPT_ARG_STRING, &diskGUID, 'U', "set disk GUID", "guid"},
       {"verify", 'v', POPT_ARG_NONE, NULL, 'v', "check partition table integrity", ""},
       {"version", 'V', POPT_ARG_NONE, NULL, 'V', "display version information", ""},
+      {"wipe-partitions", 'W', POPT_ARG_STRING, &wipeMode, 'W', "wipe new partition signature areas", "never|always"},
       {"zap", 'z', POPT_ARG_NONE, NULL, 'z', "zap (destroy) GPT (but not MBR) data structures", ""},
       {"zap-all", 'Z', POPT_ARG_NONE, NULL, 'Z', "zap (destroy) GPT and MBR data structures", ""},
       POPT_AUTOHELP { NULL, 0, 0, NULL, 0 }
@@ -154,6 +158,14 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
       } // switch
       numOptions++;
    } // while
+
+   // Validate --wipe-partitions early if given before the device; it is
+   // parsed again at save time (covers -W appearing after the device).
+   WipeMode earlyWipeMode;
+   if (!OhosParseWipeMode(wipeMode, earlyWipeMode)) {
+      poptFreeContext(poptCon);
+      return 1;
+   } // if
 
    // Assume first non-option argument is the device filename....
    device = (char*) poptGetArg(poptCon);
@@ -236,11 +248,23 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                   break;
                case 'd':
                   JustLooking(0);
+                  if ((deletePartNum > 0) && IsUsedPartNum(deletePartNum - 1)) {
+                     startSector = operator[](deletePartNum - 1).GetFirstLBA();
+                     endSector = operator[](deletePartNum - 1).GetLastLBA();
+                  } else {
+                     startSector = 0;
+                     endSector = 0;
+                  } // if/else
                   if (DeletePartition(deletePartNum - 1) == 0) {
                      cerr << "Error " << errno << " deleting partition!\n";
                      neverSaveData = 1;
-                  } else saveData = 1;
-                                                      break;
+                  } else {
+                     if (startSector || endSector) {
+                        wiper.ForgetRange(startSector, endSector);
+                     } // if
+                     saveData = 1;
+                  } // if/else
+                                                   break;
                case 'D':
                   cout << GetAlignment() << "\n";
                   break;
@@ -299,6 +323,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                     break;
                case 'l':
                   LoadBackupFile(backupFile, saveData, neverSaveData);
+                  wiper.Clear();
                   free(backupFile);
                   break;
                case 'L':
@@ -329,6 +354,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                   startSector = IeeeToInt(GetString(newPartInfo, 2), sSize, low, high, sectorAlignment, low);
                   endSector = IeeeToInt(GetString(newPartInfo, 3), sSize, startSector, high, sectorAlignment, high);
                   if (CreatePartition(newPartNum, startSector, endSector)) {
+                     wiper.RememberRange(startSector, endSector);
                      saveData = 1;
                   } else {
                      cerr << "Could not create partition " << newPartNum + 1 << " from "
@@ -347,6 +373,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                      newPartNum = largestPartNum - 1;
                   }
                   if (CreatePartition(largestPartNum - 1, startSector, endSector)) {
+                     wiper.RememberRange(startSector, endSector);
                      saveData = 1;
                   } else {
                      cerr << "Could not create partition " << largestPartNum << " from "
@@ -357,6 +384,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                case 'o':
                   JustLooking(0);
                   ClearGPTData();
+                  wiper.Clear();
                   saveData = 1;
                   break;
                case 'O':
@@ -439,7 +467,10 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                case 'v':
                   Verify();
                   break;
+               case 'W':
+                  break;
                case 'z':
+                  wiper.Clear();
                   if (!pretend) {
                      DestroyGPT();
                   } // if
@@ -447,6 +478,7 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
                   saveData = 0;
                   break;
                case 'Z':
+                  wiper.Clear();
                   if (!pretend) {
                      DestroyGPT();
                      DestroyMBR();
@@ -501,8 +533,15 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
          retval = 2;
       } // if/else loaded OK
       if ((saveData) && (!neverSaveData) && (saveNonGPT) && (!pretend)) {
-         if (!SaveGPTData(1))
+         // Wipe BEFORE SaveGPTData: the signature must be gone before
+         // SaveGPTData's DiskSync fires the uevent that makes udev/udisks2
+         // rescan, otherwise blkid may see the stale signature and auto-mount
+         // before the wipe runs. I/O failure here only warns; we still proceed
+         // to SaveGPTData so the user's -n takes effect.
+         OhosWipePartitions(wipeMode, wiper, GetDisk(), GetBlockSize());
+         if (!SaveGPTData(1)) {
             retval = 4;
+         } // if
       }
       if (saveData && (!saveNonGPT)) {
          cout << "Non-GPT disk; not saving changes. Use -g to override.\n";

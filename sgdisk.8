@@ -487,6 +487,17 @@ options on the same command line will be ignored.
 Display program version information. This option may be used without
 specifying a device filename.
 
+.TP
+.B \-W, \-\-wipe\-partitions=never|always
+Control wiping of filesystem, RAID, and other signature areas in newly
+created partitions. The default is \fInever\fR. In \fIalways\fR mode,
+\fBsgdisk\fR zeroes the first and last 1MiB of each partition created by
+\fI\-n\fR (\fI\-\-new\fR) or \fI\-N\fR (\fI\-\-largest\-new\fR) after it
+writes the updated GPT to disk. This makes common stale filesystem
+signatures invisible without creating a filesystem. Because \fBsgdisk\fR is
+non-interactive and lacks libblkid, it offers no \fIauto\fR (signature
+detected) mode; choose \fInever\fR or \fIalways\fR explicitly.
+
 .TP 
 .B \-z, \-\-zap
 Zap (destroy) the GPT data structures and then exit. Use this option if you
