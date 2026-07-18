@@ -533,18 +533,15 @@ int GPTDataCL::DoOptions(int argc, char* argv[]) {
          retval = 2;
       } // if/else loaded OK
       if ((saveData) && (!neverSaveData) && (saveNonGPT) && (!pretend)) {
+         // Wipe BEFORE SaveGPTData: the signature must be gone before
+         // SaveGPTData's DiskSync fires the uevent that makes udev/udisks2
+         // rescan, otherwise blkid may see the stale signature and auto-mount
+         // before the wipe runs. I/O failure here only warns; we still proceed
+         // to SaveGPTData so the user's -n takes effect.
+         OhosWipePartitions(wipeMode, wiper, GetDisk(), GetBlockSize());
          if (!SaveGPTData(1)) {
             retval = 4;
-         } else {
-            WipeMode wipeDecision = WipeMode::WIPE_NEVER;
-            if (OhosParseWipeMode(wipeMode, wipeDecision) &&
-                wipeDecision == WipeMode::WIPE_ALWAYS) {
-               if (!wiper.WipeAll(GetDisk(), GetBlockSize())) {
-                  cerr << "Warning: failed to wipe some partition signature areas; "
-                       << "the GPT has already been saved.\n";
-               } // if wipe failed
-            } // if wipe enabled
-         } // if/else save OK
+         } // if
       }
       if (saveData && (!saveNonGPT)) {
          cout << "Non-GPT disk; not saving changes. Use -g to override.\n";

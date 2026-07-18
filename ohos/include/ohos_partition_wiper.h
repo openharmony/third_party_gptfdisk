@@ -60,4 +60,18 @@ private:
 // diagnostic and returns false. A nullptr mode yields WIPE_NEVER.
 bool OhosParseWipeMode(const char *mode, WipeMode &out);
 
+// Apply --wipe-partitions before SaveGPTData: parse `wipeMode` once more
+// (it may appear after the device name) and, if WIPE_ALWAYS, zero the
+// signature areas of every range tracked by `wiper`. Wiping BEFORE (not
+// after) SaveGPTData ensures the signature is gone before DiskSync fires
+// the uevent that makes udev/udisks2 rescan -- otherwise blkid could see
+// the stale signature and auto-mount before the wipe runs. I/O failure
+// only logs a warning here; the caller still proceeds to SaveGPTData so
+// the user's -n takes effect (a stale signature is recoverable; a missing
+// partition table change is not).
+// No-op for nullptr/never. Pulled out of GPTDataCL::DoOptions to keep that
+// function's nesting depth within the coding-standard limit.
+void OhosWipePartitions(const char *wipeMode, OhosPartitionWiper &wiper,
+                        DiskIO *disk, uint32_t blockSize);
+
 #endif // OHOS_PARTITION_WIPER_H

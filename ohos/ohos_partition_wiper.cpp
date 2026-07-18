@@ -183,3 +183,19 @@ bool OhosParseWipeMode(const char *mode, WipeMode &out) {
              << "'; expected 'never' or 'always'.\n";
    return false;
 } // OhosParseWipeMode()
+
+void OhosWipePartitions(const char *wipeMode, OhosPartitionWiper &wiper,
+                        DiskIO *disk, uint32_t blockSize) {
+   WipeMode wipeDecision = WipeMode::WIPE_NEVER;
+
+   if (!OhosParseWipeMode(wipeMode, wipeDecision)) {
+      return;
+   } // if
+   if (wipeDecision != WipeMode::WIPE_ALWAYS) {
+      return;
+   } // if
+   if (!wiper.WipeAll(disk, blockSize)) {
+      std::cerr << "Warning: failed to wipe some partition signature areas; "
+                << "saving GPT anyway.\n";
+   } // if
+} // OhosWipePartitions()
