@@ -25,6 +25,7 @@ config("gptdisk_config") {
 }
 ohos_executable("sgdisk") {
   install_enable = true
+  branch_protector_ret = "pac_ret"
   sources = [
     "attributes.cc",
     "basicmbr.cc",
@@ -56,6 +57,7 @@ ohos_executable("sgdisk") {
 
 ohos_executable("ohos_fixparts") {
   install_enable = true
+  branch_protector_ret = "pac_ret"
 
   sources = [
     "ohos/ohos_fixparts.cpp",
