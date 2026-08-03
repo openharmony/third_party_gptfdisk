@@ -39,11 +39,11 @@ ohos_executable("sgdisk") {
     "guid.cc",
     "mbr.cc",
     "mbrpart.cc",
+    "ohos/src/libpart/libpart.cpp",
     "parttypes.cc",
     "sgdisk.cc",
     "support.cc",
     "ohos/ohos_partition_wiper.cpp",
-    "ohos/src/libpart/libpart.cpp",
   ]
   public_configs = [ ":gptdisk_config" ]
   external_deps = [
